@@ -19,13 +19,13 @@ import os
 import boto3
 
 
-# Connect to AWS DynamoDB
+# Establish connection with AWS DynamoDB
 
-table_name = '<Replace this with table name>'
-RoleArn='<Replace this with Role ARN>'
+role_arn = "<Replace with Lambda Role ARN>"
+table_name = '<Replace with Table Name>'
 
 sts_client = boto3.client('sts')
-assumed_role_object=sts_client.assume_role(RoleArn, RoleSessionName='Session1')
+assumed_role_object=sts_client.assume_role(RoleArn=role_arn, RoleSessionName='Session1')
 credentials=assumed_role_object['Credentials']
 
 dynamodb = boto3.resource('dynamodb',
@@ -53,12 +53,12 @@ class LaunchRequestHandler(AbstractRequestHandler):
         language_prompts = handler_input.attributes_manager.request_attributes["_"]
         
         skill_name = language_prompts["SKILL_NAME"]
-        userId = handler_input.request_envelope.session.user.user_id
+        user_id = handler_input.request_envelope.session.user.user_id
         
         try:
             response = table.get_item(
                 Key={
-                    'userId': userId
+                    'user_id': user_id
                 }
             )
             item = response['Item']
@@ -84,12 +84,12 @@ class MyNameIsIntentHandler(AbstractRequestHandler):
     def handle(self,handler_input):
         language_prompts = handler_input.attributes_manager.request_attributes["_"]
         
-        userId = handler_input.request_envelope.session.user.user_id
+        user_id = handler_input.request_envelope.session.user.user_id
         user_name = handler_input.request_envelope.request.intent.slots["UserNameSlot"].value
         
         table.put_item(
             Item={
-                'userId': userId,
+                'user_id': user_id,
                 'user_name': user_name
             }
         )
@@ -111,12 +111,12 @@ class WhatsMyNameIntentHandler(AbstractRequestHandler):
     
     def handle(self, handler_input):
         language_prompts = handler_input.attributes_manager.request_attributes["_"]
-        userId = handler_input.request_envelope.session.user.user_id
+        user_id = handler_input.request_envelope.session.user.user_id
         
         try:
             response = table.get_item(
                 Key={
-                    'userId': userId
+                    'user_id': user_id
                 }
             )
             item = response['Item']
@@ -142,12 +142,12 @@ class UpdateNameIntentHandler(AbstractRequestHandler):
     def handle(self,handler_input):
         language_prompts = handler_input.attributes_manager.request_attributes["_"]
         
-        userId = handler_input.request_envelope.session.user.user_id
+        user_id = handler_input.request_envelope.session.user.user_id
         user_name = handler_input.request_envelope.request.intent.slots["NewNameSlot"].value
         
         table.update_item(
             Key={
-                'userId': userId
+                'user_id': user_id
             },
             UpdateExpression='SET user_name = :val1',
             ExpressionAttributeValues={
@@ -171,13 +171,11 @@ class DeleteNameIntentHandler(AbstractRequestHandler):
     
     def handle(self,handler_input):
         language_prompts = handler_input.attributes_manager.request_attributes["_"]
+        user_id = handler_input.request_envelope.session.user.user_id
         
-        userId = handler_input.request_envelope.session.user.user_id
-        
-        # Delete all attributes from the DB
         table.delete_item(
             Key={
-                'userId': userId
+                'user_id': user_id
             }
         )
         
